@@ -1,0 +1,55 @@
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /home/e91/vcs/PPMICode/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_e79f2/fast"
+/usr/bin/make -f CMakeFiles/cmTC_e79f2.dir/build.make CMakeFiles/cmTC_e79f2.dir/build
+make[1]: Entering directory '/home/e91/vcs/PPMICode/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_e79f2.dir/CheckSymbolExists.c.o
+/home/e91/anaconda3/envs/test_petsc/bin/x86_64-conda_cos6-linux-gnu-cc    -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /home/e91/anaconda3/envs/test_petsc/include   -D_GLIBCXX_USE_CXX11_ABI=1     -o CMakeFiles/cmTC_e79f2.dir/CheckSymbolExists.c.o   -c /home/e91/vcs/PPMICode/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+Linking C executable cmTC_e79f2
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_e79f2.dir/link.txt --verbose=1
+/home/e91/anaconda3/envs/test_petsc/bin/x86_64-conda_cos6-linux-gnu-cc  -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /home/e91/anaconda3/envs/test_petsc/include   -D_GLIBCXX_USE_CXX11_ABI=1     -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,-rpath,/home/e91/anaconda3/envs/test_petsc/lib -Wl,-rpath-link,/home/e91/anaconda3/envs/test_petsc/lib -L/home/e91/anaconda3/envs/test_petsc/lib   CMakeFiles/cmTC_e79f2.dir/CheckSymbolExists.c.o  -o cmTC_e79f2 
+/home/e91/anaconda3/envs/test_petsc/bin/../lib/gcc/x86_64-conda_cos6-linux-gnu/7.3.0/../../../../x86_64-conda_cos6-linux-gnu/bin/ld: CMakeFiles/cmTC_e79f2.dir/CheckSymbolExists.c.o: in function `main':
+CheckSymbolExists.c:(.text.startup.main+0x3): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_e79f2.dir/build.make:97: recipe for target 'cmTC_e79f2' failed
+make[1]: *** [cmTC_e79f2] Error 1
+make[1]: Leaving directory '/home/e91/vcs/PPMICode/build/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_e79f2/fast' failed
+make: *** [cmTC_e79f2/fast] Error 2
+
+File /home/e91/vcs/PPMICode/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/e91/vcs/PPMICode/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_1ba4e/fast"
+/usr/bin/make -f CMakeFiles/cmTC_1ba4e.dir/build.make CMakeFiles/cmTC_1ba4e.dir/build
+make[1]: Entering directory '/home/e91/vcs/PPMICode/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_1ba4e.dir/CheckFunctionExists.c.o
+/home/e91/anaconda3/envs/test_petsc/bin/x86_64-conda_cos6-linux-gnu-cc    -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /home/e91/anaconda3/envs/test_petsc/include   -D_GLIBCXX_USE_CXX11_ABI=1  -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_1ba4e.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.5/Modules/CheckFunctionExists.c
+Linking C executable cmTC_1ba4e
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_1ba4e.dir/link.txt --verbose=1
+/home/e91/anaconda3/envs/test_petsc/bin/x86_64-conda_cos6-linux-gnu-cc  -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /home/e91/anaconda3/envs/test_petsc/include   -D_GLIBCXX_USE_CXX11_ABI=1  -DCHECK_FUNCTION_EXISTS=pthread_create   -Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,-rpath,/home/e91/anaconda3/envs/test_petsc/lib -Wl,-rpath-link,/home/e91/anaconda3/envs/test_petsc/lib -L/home/e91/anaconda3/envs/test_petsc/lib   CMakeFiles/cmTC_1ba4e.dir/CheckFunctionExists.c.o  -o cmTC_1ba4e -lpthreads 
+/home/e91/anaconda3/envs/test_petsc/bin/../lib/gcc/x86_64-conda_cos6-linux-gnu/7.3.0/../../../../x86_64-conda_cos6-linux-gnu/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_1ba4e.dir/build.make:97: recipe for target 'cmTC_1ba4e' failed
+make[1]: *** [cmTC_1ba4e] Error 1
+make[1]: Leaving directory '/home/e91/vcs/PPMICode/build/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_1ba4e/fast' failed
+make: *** [cmTC_1ba4e/fast] Error 2
+
+
