@@ -1,18 +1,7 @@
 
-#define _GLIBCXX_USE_CXX11_ABI 1
 #include <iostream>
 #include <fstream>
-#include <thread>
-#include <string>
-#include <vector>
 #include <iterator>
-#include <boost/tokenizer.hpp>
-#include <boost/format.hpp>
-#include <boost/iostreams/filtering_streambuf.hpp>
-#include <boost/iostreams/copy.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
-//#include "tbb/concurrent_queue.h"
-#include <zlib.h>
 #include <arrow/api.h>
 #include <arrow/io/api.h>
 #include <parquet/arrow/reader.h>
@@ -23,7 +12,6 @@
 #include <math.h>
 
 
-using namespace boost;
 using std::string;
 
 
@@ -38,34 +26,31 @@ int readParquetFile(string parquetFilePath, std::vector<IJPair> &pairs) {
     PARQUET_THROW_NOT_OK(reader->ReadTable(&table));
     // expected schema
     std::vector<std::shared_ptr<arrow::Field>> schema_vector = {
-        arrow::field("i", arrow::int64()),
-        arrow::field("j",arrow::int64()),
+        arrow::field("i", arrow::int32()),
+        arrow::field("j",arrow::int32()),
         arrow::field("count",arrow::int64()),
     };
     auto expected_schema = std::make_shared<arrow::Schema>(schema_vector);
     // verify schema
-    //if (!expected_schema->Equals(*table->schema())) {
-    //    std::cout << "INVALID SCHEMA:" << (*table->schema()).ToString() << std::endl;
-    //    return; 
-    //arrow::Status::Invalid("Schema doesnt match");
-    //}
-    auto i = std::static_pointer_cast<arrow::Int64Array>(table->column(0)->chunk(0));
-    auto j = std::static_pointer_cast<arrow::Int64Array>(table->column(1)->chunk(0));
+    // don't check the metadata though
+    if (!expected_schema->Equals(*table->schema(),false)) {
+        std::cout << "INVALID SCHEMA:" << (*table->schema()).ToString() << std::endl;
+        arrow::Status::Invalid("Schema doesnt match"); 
+        return -1;
+    }
+    auto i = std::static_pointer_cast<arrow::Int32Array>(table->column(0)->chunk(0));
+    auto j = std::static_pointer_cast<arrow::Int32Array>(table->column(1)->chunk(0));
     auto count = std::static_pointer_cast<arrow::Int64Array>(table->column(2)->chunk(0));
-    int64_t n = 0;
+    int n = 0;
     for (int64_t c=0; c < table->num_rows(); c++) {
-        int64_t i_value = i->Value(c);
-        int64_t j_value = j->Value(c);
-        //if (i_value > 500 ){continue;}
-        //if (j_value > 500 ){continue;}
-        int32_t count_value = (int) count->Value(c);
-        //if (count_value < 3) {continue;} 
-        //pairs.emplace_back( (int)i_value+1, (int)j_value+1, count_value);
+        int i_value = (int) i->Value(c);
+        int j_value = (int) j->Value(c);
+        long long int count_value = (long long int) count->Value(c);
         if (i_value!=j_value) {
-            pairs.emplace_back( (int)i_value, (int)j_value, count_value);
-            pairs.emplace_back( (int)j_value, (int)i_value, count_value);
+            pairs.emplace_back( i_value, j_value, count_value);
+            pairs.emplace_back( j_value, i_value, count_value);
         } else { 
-            pairs.emplace_back( (int)i_value, (int)j_value, count_value);
+            pairs.emplace_back( i_value, j_value, count_value);
         }
         n = std::max(n,i_value);
         n = std::max(n, j_value);
@@ -75,41 +60,33 @@ int readParquetFile(string parquetFilePath, std::vector<IJPair> &pairs) {
 }
 
 bool compareIJ(IJPair a, IJPair b) {
-    if (a.i<b.i){
-        return true;
+    if (a.i==b.i){
+        return a.j<b.j;
     }
-    if (a.i > b.i) {
-        return false;
-    }
-    if (a.j < b.j){
-        return true;
-    }
-    return false;
+    return a.i<b.i;
 }
 
-int buildMatrix(std::vector<IJPair> &pairs, Mat *A, int ndim){
+int buildMatrix(std::vector<IJPair> &pairs, Mat *A, int ndim, PetscScalar alpha){
     std::cout << "SORTING" <<std::endl;
     std::sort(pairs.begin(), pairs.end(), compareIJ);
     std::cout << "SORTED" <<std::endl;
-    std::cout << pairs.size() << std::endl;
     double * csr_a = (double *) calloc(pairs.size(), sizeof(double));
     int * csr_ia = (int*) calloc(ndim+1, sizeof(int));
     int * csr_ja = (int*) calloc(pairs.size(),sizeof(int));
     int nnz =0 ;
     int a_index = 0;
     std::vector<IJPair>::iterator end = pairs.end();
-    long long total_pairs = 0;
-    long long * wCounts = (long long *) calloc(ndim+1,sizeof(long long));
+    long long total_pairs = 0; // |D| 
+    long long * wCounts = (long long *) calloc(ndim+1,sizeof(long long)); // SUM(w, c')
     for(std::vector<IJPair>::iterator current_pair=pairs.begin(); current_pair<end; current_pair++) {
         total_pairs+=current_pair->count;
         wCounts[current_pair->i]+=current_pair->count;
-        //wCounts[current_pair->j]+=current_pair->count;
     }
 
     for(std::vector<IJPair>::iterator current_pair=pairs.begin(); current_pair<end; current_pair++) {
-        //std::cout << current_row << " "<< current_pair->j << " " << current_pair->count << std::endl;
-        //exit(0);
-        csr_a[a_index] = log2(current_pair->count * pow(total_pairs,.75) / (wCounts[current_pair->i]*pow(wCounts[current_pair->j],.75)));
+        csr_a[a_index] = log2(current_pair->count * pow(total_pairs, alpha) / (wCounts[current_pair->i]*pow(wCounts[current_pair->j], alpha)));
+        csr_a[a_index] = std::max(0.0, csr_a[a_index]);
+        // get max as well
         csr_ja[a_index] = current_pair->j;
         nnz++;
         csr_ia[current_pair->i+1] = nnz;
@@ -119,11 +96,10 @@ int buildMatrix(std::vector<IJPair> &pairs, Mat *A, int ndim){
         if (csr_ia[a]==0) {
             csr_ia[a]= csr_ia[a-1];
         }
-        //std::cout<< csr_ia[a] << " ";
     }
     PetscErrorCode ierr;
-    PetscInt n = ndim;
-    PetscInt Istart, Iend;
+    //PetscInt n = ndim;
+    //PetscInt Istart, Iend;
     //ierr = MatCreate(PETSC_COMM_WORLD,&A);CHKERRQ(ierr);
     //ierr = MatSetSizes(A,PETSC_DECIDE,PETSC_DECIDE,n,n);CHKERRQ(ierr);
     //ierr = MatSetFromOptions(A);CHKERRQ(ierr);
@@ -144,10 +120,9 @@ int buildMatrix(std::vector<IJPair> &pairs, Mat *A, int ndim){
     //ierr = MatSetValue(A,current_pair->i,current_pair->j,current_pair->count,INSERT_VALUES);CHKERRQ(ierr);
     //}
     //}
-    std::cout << "NROWS:" << ndim << " NCOLS:"<< ndim << std::endl;
-    ierr = MatCreateSeqAIJWithArrays(PETSC_COMM_WORLD,ndim, ndim, csr_ia, csr_ja, csr_a,A);CHKERRQ(ierr);
-    std::cout << "INSERTED VALUES" << std::endl;
-    ierr = MatSetOption(*A, MAT_SYMMETRIC, PETSC_TRUE);CHKERRQ(ierr);
+
+    ierr = MatCreateSeqAIJWithArrays(PETSC_COMM_SELF,ndim, ndim, csr_ia, csr_ja, csr_a, A);CHKERRQ(ierr);
+    //ierr = MatSetOption(*A, MAT_SYMMETRIC, PETSC_TRUE);CHKERRQ(ierr);
     //ierr = MatAssemblyBegin(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
     //ierr = MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
     return 0;
