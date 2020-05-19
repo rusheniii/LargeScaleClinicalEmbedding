@@ -128,8 +128,9 @@ int main(int argc, char** argv) {
         PetscViewerBinaryOpen(PETSC_COMM_SELF, outputUFilePath, FILE_MODE_WRITE, &viewer);
         MatView(U,viewer);
         PetscViewerDestroy(&viewer);
-        ierr = VecDestroy(&u);CHKERRQ(ierr);
-        ierr = VecDestroy(&v);CHKERRQ(ierr);
+        //ierr = VecDestroy(&u);CHKERRQ(ierr);
+        //ierr = VecDestroy(&v);CHKERRQ(ierr);
+        ierr = MatDestroy(&U);CHKERRQ(ierr);
 
     }
 
