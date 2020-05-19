@@ -20,11 +20,11 @@ m1 = csr_matrix( (data,indices,indptr) ).todense()
 indptr,indices,data = U_cpp.getValuesCSR()
 m2 = csr_matrix( (data,indices,indptr) ).todense()
 
-n,m = m1.shape
+m,n = m1.shape
 assert m1.shape==m2.shape
 vectors1 = []
 vectors2 = []
-for i in range(m):
+for i in range(n):
     c1i =[j for sub in m1[:,i].tolist() for j in sub]
     c2i =[j for sub in m2[:,i].tolist() for j in sub]
     vectors1.append(  c1i )
