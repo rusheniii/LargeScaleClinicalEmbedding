@@ -17,5 +17,5 @@ public:
 };
 
 
-int readParquetFile(std::string parquetFilePath, std::vector<IJPair> &pairs);
+int readParquetFile(std::string parquetFilePath, std::vector<IJPair> &pairs, PetscBool isSymmetric);
 int buildMatrix(std::vector<IJPair> &pairs, Mat *A, int ndim, PetscScalar alpha);

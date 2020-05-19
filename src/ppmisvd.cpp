@@ -8,7 +8,7 @@
 #include <parquet/arrow/writer.h>
 #include <parquet/exception.h>
 #include <algorithm>
-#include "enumeratePairs.hpp"
+#include "ppmisvd.hpp"
 #include <math.h>
 
 
@@ -16,7 +16,7 @@ using std::string;
 
 
 
-int readParquetFile(string parquetFilePath, std::vector<IJPair> &pairs) {
+int readParquetFile(string parquetFilePath, std::vector<IJPair> &pairs, PetscBool isSymmetric=PETSC_FALSE) {
     // read in parquet file
     std::shared_ptr<arrow::io::ReadableFile> infile;
     PARQUET_THROW_NOT_OK(arrow::io::ReadableFile::Open(parquetFilePath, arrow::default_memory_pool(), &infile));
@@ -46,12 +46,17 @@ int readParquetFile(string parquetFilePath, std::vector<IJPair> &pairs) {
         int i_value = (int) i->Value(c);
         int j_value = (int) j->Value(c);
         long long int count_value = (long long int) count->Value(c);
-        if (i_value!=j_value) {
-            pairs.emplace_back( i_value, j_value, count_value);
-            pairs.emplace_back( j_value, i_value, count_value);
-        } else { 
+        if (isSymmetric) {
+            if (i_value!=j_value) {
+                pairs.emplace_back( i_value, j_value, count_value);
+                pairs.emplace_back( j_value, i_value, count_value);
+            } else { 
+                pairs.emplace_back( i_value, j_value, count_value*2);
+            }
+        } else {
             pairs.emplace_back( i_value, j_value, count_value);
         }
+        
         n = std::max(n,i_value);
         n = std::max(n, j_value);
     }
@@ -67,16 +72,14 @@ bool compareIJ(IJPair a, IJPair b) {
 }
 
 int buildMatrix(std::vector<IJPair> &pairs, Mat *A, int ndim, PetscScalar alpha){
-    std::cout << "SORTING" <<std::endl;
     std::sort(pairs.begin(), pairs.end(), compareIJ);
-    std::cout << "SORTED" <<std::endl;
     double * csr_a = (double *) calloc(pairs.size(), sizeof(double));
     int * csr_ia = (int*) calloc(ndim+1, sizeof(int));
     int * csr_ja = (int*) calloc(pairs.size(),sizeof(int));
     int nnz =0 ;
     int a_index = 0;
     std::vector<IJPair>::iterator end = pairs.end();
-    long long total_pairs = 0; // |D| 
+    long long total_pairs = 0; // |D|, the number of pairs in D
     long long * wCounts = (long long *) calloc(ndim+1,sizeof(long long)); // SUM(w, c')
     for(std::vector<IJPair>::iterator current_pair=pairs.begin(); current_pair<end; current_pair++) {
         total_pairs+=current_pair->count;
@@ -84,9 +87,10 @@ int buildMatrix(std::vector<IJPair> &pairs, Mat *A, int ndim, PetscScalar alpha)
     }
 
     for(std::vector<IJPair>::iterator current_pair=pairs.begin(); current_pair<end; current_pair++) {
+        // calculate pmi
         csr_a[a_index] = log2(current_pair->count * pow(total_pairs, alpha) / (wCounts[current_pair->i]*pow(wCounts[current_pair->j], alpha)));
+        // calculate ppmi
         csr_a[a_index] = std::max(0.0, csr_a[a_index]);
-        // get max as well
         csr_ja[a_index] = current_pair->j;
         nnz++;
         csr_ia[current_pair->i+1] = nnz;

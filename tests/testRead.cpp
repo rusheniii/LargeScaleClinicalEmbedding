@@ -7,25 +7,32 @@
 #include <thread>
 #include <string>
 #include <vector>
-#include "enumeratePairs.hpp"
+#include "ppmisvd.hpp"
 #include <boost/test/unit_test.hpp>
 
 using std::string;
 
 
 BOOST_AUTO_TEST_CASE(read_parquet) {
-    std::vector<MedicalEvent> events_parquet;
-    auto t = std::thread(readParquetFile,"../tests/test.parquet", std::ref(events_parquet)); 
-    t.join();
-    //readParquetFile("../tests/test.parquet", std::ref(events_parquet));
-    BOOST_CHECK_EQUAL( events_parquet.size(), 9801);
-    std::vector<MedicalEvent> events_gzip;
-    readGzipFile("../tests/test.csv.gz", std::ref(events_gzip));
-    BOOST_CHECK_EQUAL( events_gzip.size(), 9801);
+    std::vector<IJPair> events;
+    readParquetFile("../tests/test.parquet", events, PETSC_FALSE); 
+    BOOST_TEST_MESSAGE("Events Size:" << events.size());
+    BOOST_CHECK_EQUAL(events.size(), 1489);
+    for (auto event : events) {
+        BOOST_CHECK_EQUAL(event.i+event.j, event.count);
+    }
+}
 
-    for (int i =0 ; i < events_parquet.size(); i++) {
-        BOOST_CHECK_EQUAL( events_parquet[i].psid, events_gzip[i].psid);
-        BOOST_CHECK_EQUAL( events_parquet[i].numDays, events_gzip[i].numDays);
-        BOOST_CHECK_EQUAL( events_parquet[i].word, events_gzip[i].word);
+BOOST_AUTO_TEST_CASE(read_parquet_sym) {
+    std::vector<IJPair> events;
+    readParquetFile("../tests/test.parquet", events, PETSC_TRUE); 
+    BOOST_TEST_MESSAGE("Events Size:" << events.size());
+    BOOST_CHECK_EQUAL(events.size(), 2961);
+    for (auto event : events) {
+        if (event.i == event.j){
+            BOOST_CHECK_EQUAL( (event.i+event.j)*2, event.count);
+        } else {
+            BOOST_CHECK_EQUAL(event.i+event.j, event.count);
+        }
     }
 }
