@@ -1,6 +1,6 @@
 # PPMI-SVD 
 
-##Requirements:
+## Requirements:
 1. Anaconda
 
 ## Installation Instructions
