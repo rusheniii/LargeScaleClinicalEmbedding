@@ -5,11 +5,16 @@ This is a C++ implementation that performs singular value decomposition on a lar
 1. Anaconda
 
 ## Installation Instructions
-`conda install -c conda-forge gxx_linux-64 arrow-cpp=0.15 cmake gfortran_linux-64 slepc`
+`conda install -c conda-forge gxx_linux-64 arrow-cpp=0.15 cmake gfortran_linux-64 slepc=3.12` <br/><br/>
+`mkdir build` <br/><br/>
+`cd build` <br/><br/>
+`cmake ..` <br/><br/>
+`make -j 5` <br/><br/>
+These steps should compile the application.
 ## Usage
 
-`-inputFilePath <input path>` <br/><br/>
-`-outputFilePath <output path>` <br/><br/>
-`-sym ` <br/><br/>
-`-alpha <smoothing exponent>`  <br/><br/>
-`-svd_nsv <number of singular vectors>` <br/><br/>
+`-inputFilePath <input path>`: This is the filepath to a parquet file with schema: i (int32),j (int32), count (int64) <br/><br/>
+`-outputFilePath <output path>`: This is the location to write the left singular vectors as a PETSc Matrix <br/><br/>
+`-sym `: For each i,j pair in input file, this flag also adds pair j,i into the matrix. (ie the input is stored as a triangular matrix but should be symmetric).<br/><br/>
+`-alpha <smoothing parameter>`: This is context distributional smoothing. <br/><br/>
+`-svd_nsv <number of singular vectors>`: This specifies the number of singular vectors to find. <br/><br/>
