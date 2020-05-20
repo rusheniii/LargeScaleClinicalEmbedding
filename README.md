@@ -16,5 +16,6 @@ These steps should compile the application.
 `-inputFilePath <input path>`: This is the filepath to a parquet file with schema: i (int32),j (int32), count (int64) <br/><br/>
 `-outputFilePath <output path>`: This is the location to write the left singular vectors as a PETSc Matrix <br/><br/>
 `-sym `: For each i,j pair in input file, this flag also adds pair j,i into the matrix. (ie the input is stored as a triangular matrix but should be symmetric).<br/><br/>
+`-eigenWeight` : should the left signular vectors be scaled by square root of sigma? <br/><br/>
 `-alpha <smoothing parameter>`: This is context distributional smoothing. <br/><br/>
 `-svd_nsv <number of singular vectors>`: This specifies the number of singular vectors to find. <br/><br/>
