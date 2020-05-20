@@ -8,8 +8,8 @@ This is a C++ implementation that performs singular value decomposition on a lar
 `conda install -c conda-forge gxx_linux-64 arrow-cpp=0.15 cmake gfortran_linux-64 slepc`
 ## Usage
 
-`-inputFilePath <input path>`
-`-outputFilePath <output path>`
-`-sym`
-`-alpha <smoothing exponent>` 
-`-svd_nsv <number of singular vectors>`
+`-inputFilePath <input path>` <br/><br/>
+`-outputFilePath <output path>` <br/><br/>
+`-sym ` <br/><br/>
+`-alpha <smoothing exponent>`  <br/><br/>
+`-svd_nsv <number of singular vectors>` <br/><br/>
