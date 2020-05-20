@@ -14,13 +14,13 @@ int main(int argc, char** argv) {
         return ierr;
     }
 
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"Compute PPMI Matrix\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_SELF,"Compute PPMI Matrix\n");CHKERRQ(ierr);
     Mat A;
     SVD            svd;             /* singular value problem solver context */
     SVDType        type;
     PetscReal      error,tol,sigma,mu=PETSC_SQRT_MACHINE_EPSILON;
     PetscInt       nsv,maxit,its,nconv;
-    PetscBool helpOption, isSymmetricOption, flg;
+    PetscBool helpOption, isSymmetricOption, eigenWeight, flg;
     PetscScalar alpha;
     int MAXSTRINGLENGTH = 255;
     char filename[MAXSTRINGLENGTH], outputUFilePath[MAXSTRINGLENGTH];
@@ -31,6 +31,8 @@ int main(int argc, char** argv) {
     PetscOptionsBool("-help", "Display Help Menu", "", helpOption, &helpOption, NULL);
     isSymmetricOption = PETSC_FALSE;
     PetscOptionsBool("-sym", "Has the input file stored the symmetric matrix as triangular matrix?", "", isSymmetricOption, &isSymmetricOption, NULL);
+    eigenWeight = PETSC_FALSE;
+    PetscOptionsBool("-eigenWeight", "multiply left singular vectors by sqrt(sigma)?", "", eigenWeight, &eigenWeight, NULL);
     alpha = 0.75;
     PetscOptionsScalar("-alpha","The exponent for smoothing PPMI", "", alpha, &alpha, NULL);
     PetscOptionsEnd();
@@ -111,6 +113,10 @@ int main(int argc, char** argv) {
             Get converged singular triplets: i-th singular value is stored in sigma
             */
             ierr = SVDGetSingularTriplet(svd,i,&sigma,u,v);CHKERRQ(ierr);
+            PetscScalar sqrt_sigma = (PetscScalar) std::sqrt(sigma);
+            if (eigenWeight){
+                VecScale(u,sqrt_sigma);
+            }
             //TODO: multiply each vector by square root sigma
             //VecCreateMPIWithArray(PETSC_COMM_WORLD, bs, ndim, PETSC_DECIDE, cols[i]);
             // assume that dense matrix is stored by column.

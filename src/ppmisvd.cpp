@@ -7,6 +7,7 @@
 #include <parquet/arrow/reader.h>
 #include <parquet/arrow/writer.h>
 #include <parquet/exception.h>
+#include <boost/sort/sort.hpp>
 #include <algorithm>
 #include "ppmisvd.hpp"
 #include <math.h>
@@ -23,6 +24,7 @@ int readParquetFile(string parquetFilePath, std::vector<IJPair> &pairs, PetscBoo
     std::unique_ptr<parquet::arrow::FileReader> reader;
     PARQUET_THROW_NOT_OK(parquet::arrow::OpenFile(infile, arrow::default_memory_pool(), &reader));
     std::shared_ptr<arrow::Table> table;
+    reader->set_use_threads(true);
     PARQUET_THROW_NOT_OK(reader->ReadTable(&table));
     // expected schema
     std::vector<std::shared_ptr<arrow::Field>> schema_vector = {
@@ -48,13 +50,17 @@ int readParquetFile(string parquetFilePath, std::vector<IJPair> &pairs, PetscBoo
         long long int count_value = (long long int) count->Value(c);
         if (isSymmetric) {
             if (i_value!=j_value) {
-                pairs.emplace_back( i_value, j_value, count_value);
-                pairs.emplace_back( j_value, i_value, count_value);
+                IJPair pair1 = {i_value, j_value, count_value};
+                IJPair pair2 = {j_value, i_value, count_value};
+                pairs.emplace_back( pair1 );
+                pairs.emplace_back( pair2 );
             } else { 
-                pairs.emplace_back( i_value, j_value, count_value*2);
+                IJPair pair = {i_value, j_value, count_value*2};
+                pairs.emplace_back( pair);
             }
         } else {
-            pairs.emplace_back( i_value, j_value, count_value);
+            IJPair pair = {i_value, j_value, count_value};
+            pairs.emplace_back( pair );
         }
         
         n = std::max(n,i_value);
@@ -64,15 +70,8 @@ int readParquetFile(string parquetFilePath, std::vector<IJPair> &pairs, PetscBoo
     return n+1;
 }
 
-bool compareIJ(IJPair a, IJPair b) {
-    if (a.i==b.i){
-        return a.j<b.j;
-    }
-    return a.i<b.i;
-}
-
 int buildMatrix(std::vector<IJPair> &pairs, Mat *A, int ndim, PetscScalar alpha){
-    std::sort(pairs.begin(), pairs.end(), compareIJ);
+    boost::sort::block_indirect_sort(pairs.begin(), pairs.end());
     double * csr_a = (double *) calloc(pairs.size(), sizeof(double));
     int * csr_ia = (int*) calloc(ndim+1, sizeof(int));
     int * csr_ja = (int*) calloc(pairs.size(),sizeof(int));
@@ -126,6 +125,8 @@ int buildMatrix(std::vector<IJPair> &pairs, Mat *A, int ndim, PetscScalar alpha)
     //}
 
     ierr = MatCreateSeqAIJWithArrays(PETSC_COMM_SELF,ndim, ndim, csr_ia, csr_ja, csr_a, A);CHKERRQ(ierr);
+
+
     //ierr = MatSetOption(*A, MAT_SYMMETRIC, PETSC_TRUE);CHKERRQ(ierr);
     //ierr = MatAssemblyBegin(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
     //ierr = MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
