@@ -1,0 +1,33 @@
+cmake_minimum_required(VERSION 3.5)
+project(tests CXX)
+
+enable_testing()
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+find_package(Boost COMPONENTS unit_test_framework REQUIRED)
+find_package(Threads)
+include_directories($ENV{CONDA_PREFIX}/include)
+#include_directories($ENV{TBBROOT}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../src)
+#file(GLOB TEST_SRCS RELATIVE ${CMAKE_SOURCE_DIR} tests/*.cpp)
+file(GLOB TEST_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
+
+#link_directories($ENV{TBBROOT}/lib)
+link_directories($ENV{CONDA_PREFIX}/lib/)
+
+foreach(testSrc ${TEST_SRCS})
+    get_filename_component(testName ${testSrc} NAME_WE)
+    add_executable(${testName} ${testSrc} ${CMAKE_CURRENT_SOURCE_DIR}/../src/enumeratePairs.cpp)
+    target_link_libraries(${testName} boost_unit_test_framework)
+    target_link_libraries(${testName} boost_iostreams)
+    target_link_libraries(${testName} tbb)
+    target_link_libraries(${testName} parquet)
+    target_link_libraries(${testName} arrow)
+    target_link_libraries(${testName} ${CMAKE_THREAD_LIBS_INIT})
+    set_target_properties(${testName} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../testBin)
+    set_target_properties(${testName} PROPERTIES LINKER_LANGUAGE CXX)
+    add_test(NAME ${testName} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../testBin COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../testBin/${testName})
+endforeach(testSrc)
+
