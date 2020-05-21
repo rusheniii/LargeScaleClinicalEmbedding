@@ -3,15 +3,22 @@ This is a C++ implementation that performs singular value decomposition on a lar
 
 ## Requirements:
 1. Anaconda
+2. Linux
 
 ## Installation Instructions
-`conda install -c conda-forge gxx_linux-64 arrow-cpp=0.15 cmake gfortran_linux-64 slepc=3.12` <br/><br/>
+`conda install -c conda-forge gxx_linux-64 arrow-cpp=0.15 cmake gfortran_linux-64 slepc=3.12 tbb-devel=2020.0` <br/><br/>
 `mkdir build` <br/><br/>
 `cd build` <br/><br/>
 `cmake ..` <br/><br/>
 `make -j 5` <br/><br/>
-These steps should compile the application.
+These steps should compile both applicationa. The binaries are in a directory named `bin`.
 ## Usage
+### `enumeratePairs [outputFile] [numberOfThreads] [input files] ...`
+This tool expects the input to be in parquet format and already sorted by Patient and number of days. <br/><br/>
+
+The input schema must conform to the following
+`PatientOrder (int64), NumDays(int32), WordIndex(int32), window(int32)` <br/><br/>
+### `ppmisvd -inputFilePath <path> -outputFilePath <path>`
 `-help` or `-h` : This will display the help menu and provides a full list of options. <br/><br/>
 `-inputFilePath <input path>`: This is the filepath to a parquet file with schema: i (int32),j (int32), count (int64) <br/><br/>
 `-outputFilePath <output path>`: This is the location to write the left singular vectors as a PETSc Matrix <br/><br/>
