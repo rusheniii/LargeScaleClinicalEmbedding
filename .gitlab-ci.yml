@@ -1,0 +1,19 @@
+mkdocs:
+  stage: build
+  tags:
+    - linux
+  artifacts:
+    paths:
+      - bin
+    expire_in: 14 days
+  script:
+    - install_conda.sh
+    - conda create --name pairs python=3.7 
+    - conda activate pairs
+    - conda install -c conda-forge gxx_linux-64 arrow-cpp=0.15 cmake gfortran_linux-64 slepc=3.12 tbb-devel=2020.0
+    - conda deactivate
+    - conda activate pairs
+    - mkdir build
+    - cd build
+    - cmake ..
+    - make -j 5
