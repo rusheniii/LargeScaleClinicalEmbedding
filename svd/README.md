@@ -12,10 +12,12 @@ This is a C++ implementation that performs singular value decomposition on a lar
 `make -j 5` <br/><br/>
 These steps should compile the application.
 ## Usage
-
+`-help` or `-h` : This will display the help menu and provides a full list of options. <br/><br/>
 `-inputFilePath <input path>`: This is the filepath to a parquet file with schema: i (int32),j (int32), count (int64) <br/><br/>
 `-outputFilePath <output path>`: This is the location to write the left singular vectors as a PETSc Matrix <br/><br/>
 `-sym `: For each i,j pair in input file, this flag also adds pair j,i into the matrix. (ie the input is stored as a triangular matrix but should be symmetric).<br/><br/>
 `-eigenWeight` : should the left signular vectors be scaled by square root of sigma? <br/><br/>
 `-alpha <smoothing parameter>`: This is context distributional smoothing. <br/><br/>
 `-svd_nsv <number of singular vectors>`: This specifies the number of singular vectors to find. <br/><br/>
+`-svd_type` : SVD solver method (one of) cross cyclic lapack lanczos trlanczos.  <br/><br/>
+`-svd_largest` or `-svd_smallest`:  Compute largest or smallest singular values. <br/><br/>
