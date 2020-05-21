@@ -8,7 +8,7 @@ mkdocs:
     expire_in: 14 days
   script:
     - install_conda.sh
-    - echo "pip_interop_enabled: true" > ~HOME/.condarc
+    - echo "pip_interop_enabled: true" > $HOME/.condarc
     - conda init bash
     - source $HOME/.bashrc
     - conda create --name pairs python=3.7 
