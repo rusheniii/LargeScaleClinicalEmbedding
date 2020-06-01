@@ -123,7 +123,7 @@ int buildMatrix(std::vector<IJPair> &pairs, Mat *A, int ndim, PetscScalar alpha)
     //ierr = MatSetValue(A,current_pair->i,current_pair->j,current_pair->count,INSERT_VALUES);CHKERRQ(ierr);
     //}
     //}
-
+    free(wCounts);
     ierr = MatCreateSeqAIJWithArrays(PETSC_COMM_SELF,ndim, ndim, csr_ia, csr_ja, csr_a, A);CHKERRQ(ierr);
 
 

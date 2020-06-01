@@ -75,6 +75,8 @@ int main(int argc, char** argv) {
     ierr = SVDSolve(svd);CHKERRQ(ierr);
     ierr = SVDGetIterationNumber(svd,&its);CHKERRQ(ierr);
     ierr = PetscPrintf(PETSC_COMM_SELF," Number of iterations of the method: %D\n",its);CHKERRQ(ierr);
+
+
     /*
     Get some information from the solver and display it
     */
@@ -134,8 +136,8 @@ int main(int argc, char** argv) {
         PetscViewerBinaryOpen(PETSC_COMM_SELF, outputUFilePath, FILE_MODE_WRITE, &viewer);
         MatView(U,viewer);
         PetscViewerDestroy(&viewer);
-        //ierr = VecDestroy(&u);CHKERRQ(ierr);
-        //ierr = VecDestroy(&v);CHKERRQ(ierr);
+        ierr = VecDestroy(&u);CHKERRQ(ierr);
+        ierr = VecDestroy(&v);CHKERRQ(ierr);
         ierr = MatDestroy(&U);CHKERRQ(ierr);
 
     }
