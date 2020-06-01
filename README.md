@@ -13,7 +13,7 @@ This pipeline for creating clinical embeddings contains two steps.
 `cd build` <br/><br/>
 `cmake ..` <br/><br/>
 `make -j 5` <br/><br/>
-These steps should compile both applicationa. The binaries are in a directory named `bin`.
+These steps should compile both applications. The binaries are in a directory named `bin`.
 ## Usage
 ### `enumeratePairs [outputFile] [numberOfThreads] [input files] ...`
 This program using Intel's TBB to count the frequency of cooccurring medical concepts using a sliding 30 day window. 
