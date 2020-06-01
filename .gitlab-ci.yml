@@ -8,6 +8,9 @@ mkdocs:
     expire_in: 14 days
   script:
     - install_conda.sh
+    - rm $HOME/.condarc
+    - conda init bash
+    - source $HOME/.bashrc
     - conda create --name pairs python=3.7 
     - conda activate pairs
     - conda install -c conda-forge gxx_linux-64 arrow-cpp=0.15 cmake gfortran_linux-64 slepc=3.12 tbb-devel=2020.0
