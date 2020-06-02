@@ -37,3 +37,14 @@ The SLEPc eigenvalue problem solver is implemented on top of PETSc.
 `-svd_nsv <number of singular vectors>`: This specifies the number of singular vectors to find. <br/><br/>
 `-svd_type` : SVD solver method (one of) cross cyclic lapack lanczos trlanczos.  <br/><br/>
 `-svd_largest` or `-svd_smallest`:  Compute largest or smallest singular values. <br/><br/>
+
+## References
+[1] Levy, Omer, et al. “Improving Distributional Similarity with Lessons Learned from Word Embeddings.” Transactions of the Association for Computational Linguistics, vol. 3, Dec. 2015, pp. 211–25.
+[2]  S. Balay, S. Abhyankar, M. F. Adams, J. Brown, P. Brune, K. Buschelman,L. Dalcin, A. Dener, V. Eijkhout, W. D. Gropp, D. Karpeyev, D. Kaushik,M. G. Knepley, D. A. May, L. C. McInnes, R. T. Mills, T. Munson, K. Rupp,P.  Sanan,  B.  F.  Smith,  S.  Zampini,  H.  Zhang,  and  H.  Zhang,  “PETScWeb   page,”   https://www.mcs.anl.gov/petsc,   2019.   [Online].   Available:https://www.mcs.anl.gov/petsc
+[3] S. Balay,  W. D. Gropp,  L. C. McInnes,  and B. F. Smith,  “Efficient man-agement of parallelism in object oriented numerical software libraries,”  in Modern  Software  Tools  in  Scientific  Computing,  E.  Arge,  A.  M.  Bruaset,and H. P. Langtangen, Eds.    Birkh ̈auser Press, 1997, pp. 163–202.
+[4] “PETSc Users Manual", Argonne National Laboratory,Tech.   Rep.   ANL-95/11   -   Revision   3.13,    2020.   [Online].   Available:https://www.mcs.anl.gov/petsc
+[5] V. Hernandez, J. E. Roman, and V. Vidal. SLEPc: A scalable and flexible toolkit for the solution of eigenvalue problems. ACM Trans. Math. Software, 31(3):351-362, 2005.
+[6]  V. Hernandez, J. E. Roman, and V. Vidal. SLEPc: Scalable Library for Eigenvalue Problem Computations. Lect. Notes Comp. Sci., vol. 2565, pages 377-391. Springer, 2003.
+[7] J. E. Roman, C. Campos, E. Romero and A. Tomas. SLEPc Users Manual. Tech. Rep. DSIC-II/24/02 - Revision 3.13, Universitat Politècnica de València, 2020.
+[8] V. Hernández, J. E. Román and A. Tomás. Parallel Arnoldi eigensolvers with enhanced scalability via global communications rearrangement. Parallel Comput., 33(7-8):521-540, 2007.
+[9] V. Hernández, J. E. Román and A. Tomás. A robust and efficient parallel SVD solver based on restarted Lanczos bidiagonalization. Electron. Trans. Numer. Anal., 31:68-85, 2008
