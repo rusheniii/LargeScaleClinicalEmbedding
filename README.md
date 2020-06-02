@@ -3,7 +3,7 @@ This pipeline for creating clinical embeddings contains two steps.
 1. Count the frequency of cooccurring medical concepts using a sliding 30 day window. 
 2. Perform singular value decomposition on the concept-concept matrix.
 
-![PipelineArchitecture][https://github.com/rusheniii/LargeScaleClinicalEmbedding/CodeEmbeddingArchitecture.png]
+![PipelineArchitecture](https://github.com/rusheniii/LargeScaleClinicalEmbedding/CodeEmbeddingArchitecture.png)
 
 ## Requirements:
 1. Anaconda
