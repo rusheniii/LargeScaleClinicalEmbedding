@@ -3,6 +3,11 @@ This pipeline for creating clinical embeddings contains two steps.
 1. Count the frequency of cooccurring medical concepts using a sliding 30 day window. 
 2. Perform singular value decomposition on the concept-concept matrix.
 
+![NormalWorkflow](https://raw.githubusercontent.com/rusheniii/LargeScaleClinicalEmbedding/master/NormalWorkflow.svg)
+This figure shows how to create a factorized PPMI matrix from patient records. The application `enumeratePairs` takes a number of patient records as input and counts the frequency of all the cooccurring pairs of concepts. The output file is a sparse matrix in parquet format with three columns: i,j, and count. Next the application called `ppmisvd` takes the sparse matrix file as input and writes the left singular vectors of the corresponding PPMI matrix.
+
+For cases where the input data is very large and needs to be scaled beyond a single machine, we recommend using an architecture similar to the pipeline below. The input data for `enumeratePairs` should be bucketed by the patient identifier. Then use a workflow manager to run the application in parallel across multiple machines. You will need to add an additional combine step to add all the sparse matrices. We recommend using the map-reduce framework to combine all the (i,j) pairs. Finally you can use `ppmisvd` to factorize the reduced sparse matrix. 
+
 ![PipelineArchitecture](https://raw.githubusercontent.com/rusheniii/LargeScaleClinicalEmbedding/master/CodeEmbeddingArchitecture.svg)
 
 ## Requirements:
