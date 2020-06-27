@@ -3,11 +3,11 @@ project(tests CXX)
 
 enable_testing()
 
+find_package(Boost COMPONENTS unit_test_framework REQUIRED)
+find_package(Threads)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-find_package(Boost COMPONENTS unit_test_framework REQUIRED)
-find_package(Threads)
 include_directories($ENV{CONDA_PREFIX}/include)
 #include_directories($ENV{TBBROOT}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../src)

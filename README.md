@@ -21,6 +21,13 @@ For cases where the input data is very large and needs to be scaled beyond a sin
 `cmake ..` <br/><br/>
 `make -j 5` <br/><br/>
 These steps should compile both applications. The binaries are in a directory named `bin`.
+
+### Installation without MPI
+`conda install -c conda-forge gxx_linux-64 arrow-cpp=0.15 cmake gfortran_linux-64 openblas tbb-devel=2020.0` <br/><br/>
+`bash no_mpi_build.sh` <br/><br/>
+`cd build` <br/><br/>
+`cmake ..` <br/><br/>
+`make -j 5` <br/><br/>
 ## Usage
 ### `enumeratePairs [outputFile] [numberOfThreads] [input files] ...`
 This program using Intel's TBB to count the frequency of cooccurring medical concepts using a sliding 30 day window. 
@@ -46,12 +53,12 @@ The SLEPc eigenvalue problem solver is implemented on top of PETSc.
 `-svd_largest` or `-svd_smallest`:  Compute largest or smallest singular values. <br/><br/>
 
 ## References
-[1] Levy, Omer, et al. “Improving Distributional Similarity with Lessons Learned from Word Embeddings.” Transactions of the Association for Computational Linguistics, vol. 3, Dec. 2015, pp. 211–25.
-[2]  S. Balay, S. Abhyankar, M. F. Adams, J. Brown, P. Brune, K. Buschelman,L. Dalcin, A. Dener, V. Eijkhout, W. D. Gropp, D. Karpeyev, D. Kaushik,M. G. Knepley, D. A. May, L. C. McInnes, R. T. Mills, T. Munson, K. Rupp,P.  Sanan,  B.  F.  Smith,  S.  Zampini,  H.  Zhang,  and  H.  Zhang,  “PETScWeb   page,”   https://www.mcs.anl.gov/petsc,   2019.   [Online].   Available:https://www.mcs.anl.gov/petsc
-[3] S. Balay,  W. D. Gropp,  L. C. McInnes,  and B. F. Smith,  “Efficient man-agement of parallelism in object oriented numerical software libraries,”  in Modern  Software  Tools  in  Scientific  Computing,  E.  Arge,  A.  M.  Bruaset,and H. P. Langtangen, Eds.    Birkh ̈auser Press, 1997, pp. 163–202.
-[4] “PETSc Users Manual", Argonne National Laboratory,Tech.   Rep.   ANL-95/11   -   Revision   3.13,    2020.   [Online].   Available:https://www.mcs.anl.gov/petsc
-[5] V. Hernandez, J. E. Roman, and V. Vidal. SLEPc: A scalable and flexible toolkit for the solution of eigenvalue problems. ACM Trans. Math. Software, 31(3):351-362, 2005.
-[6]  V. Hernandez, J. E. Roman, and V. Vidal. SLEPc: Scalable Library for Eigenvalue Problem Computations. Lect. Notes Comp. Sci., vol. 2565, pages 377-391. Springer, 2003.
-[7] J. E. Roman, C. Campos, E. Romero and A. Tomas. SLEPc Users Manual. Tech. Rep. DSIC-II/24/02 - Revision 3.13, Universitat Politècnica de València, 2020.
-[8] V. Hernández, J. E. Román and A. Tomás. Parallel Arnoldi eigensolvers with enhanced scalability via global communications rearrangement. Parallel Comput., 33(7-8):521-540, 2007.
-[9] V. Hernández, J. E. Román and A. Tomás. A robust and efficient parallel SVD solver based on restarted Lanczos bidiagonalization. Electron. Trans. Numer. Anal., 31:68-85, 2008
+[1] Levy, Omer, et al. “Improving Distributional Similarity with Lessons Learned from Word Embeddings.” Transactions of the Association for Computational Linguistics, vol. 3, Dec. 2015, pp. 211–25.<br/><br/>
+[2]  S. Balay, S. Abhyankar, M. F. Adams, J. Brown, P. Brune, K. Buschelman,L. Dalcin, A. Dener, V. Eijkhout, W. D. Gropp, D. Karpeyev, D. Kaushik,M. G. Knepley, D. A. May, L. C. McInnes, R. T. Mills, T. Munson, K. Rupp,P.  Sanan,  B.  F.  Smith,  S.  Zampini,  H.  Zhang,  and  H.  Zhang,  “PETScWeb   page,”   https://www.mcs.anl.gov/petsc,   2019.   [Online].   Available:https://www.mcs.anl.gov/petsc <br/><br/>
+[3] S. Balay,  W. D. Gropp,  L. C. McInnes,  and B. F. Smith,  “Efficient man-agement of parallelism in object oriented numerical software libraries,”  in Modern  Software  Tools  in  Scientific  Computing,  E.  Arge,  A.  M.  Bruaset,and H. P. Langtangen, Eds.    Birkh ̈auser Press, 1997, pp. 163–202. <br/><br/>
+[4] “PETSc Users Manual", Argonne National Laboratory,Tech.   Rep.   ANL-95/11   -   Revision   3.13,    2020.   [Online].   Available:https://www.mcs.anl.gov/petsc <br/><br/>
+[5] V. Hernandez, J. E. Roman, and V. Vidal. SLEPc: A scalable and flexible toolkit for the solution of eigenvalue problems. ACM Trans. Math. Software, 31(3):351-362, 2005. <br/><br/>
+[6]  V. Hernandez, J. E. Roman, and V. Vidal. SLEPc: Scalable Library for Eigenvalue Problem Computations. Lect. Notes Comp. Sci., vol. 2565, pages 377-391. Springer, 2003. <br/><br/>
+[7] J. E. Roman, C. Campos, E. Romero and A. Tomas. SLEPc Users Manual. Tech. Rep. DSIC-II/24/02 - Revision 3.13, Universitat Politècnica de València, 2020. <br/><br/>
+[8] V. Hernández, J. E. Román and A. Tomás. Parallel Arnoldi eigensolvers with enhanced scalability via global communications rearrangement. Parallel Comput., 33(7-8):521-540, 2007. <br/><br/>
+[9] V. Hernández, J. E. Román and A. Tomás. A robust and efficient parallel SVD solver based on restarted Lanczos bidiagonalization. Electron. Trans. Numer. Anal., 31:68-85, 2008 <br/><br/>
