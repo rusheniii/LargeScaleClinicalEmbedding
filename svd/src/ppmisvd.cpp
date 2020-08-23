@@ -78,16 +78,21 @@ int buildMatrix(std::vector<IJPair> &pairs, Mat *A, int ndim, PetscScalar alpha)
     int nnz =0 ;
     int a_index = 0;
     std::vector<IJPair>::iterator end = pairs.end();
-    long long total_pairs = 0; // |D|, the number of pairs in D
+    // |D|, the total number of pairs in D when alpha = 1. otherwise sum(#(c)^alpha). 
+    double total_pairs = 0; 
     long long * wCounts = (long long *) calloc(ndim+1,sizeof(long long)); // SUM(w, c')
     for(std::vector<IJPair>::iterator current_pair=pairs.begin(); current_pair<end; current_pair++) {
-        total_pairs+=current_pair->count;
         wCounts[current_pair->i]+=current_pair->count;
+    }
+    // Context distribution smoothing
+    // calculate sum(#(c)^alpha) for every c in V_c
+    for(size_t i = 0; i < ndim+1; i++){
+        total_pairs+= pow( (double)wCounts[i],alpha);
     }
 
     for(std::vector<IJPair>::iterator current_pair=pairs.begin(); current_pair<end; current_pair++) {
         // calculate pmi
-        csr_a[a_index] = log2(current_pair->count * pow(total_pairs, alpha) / (wCounts[current_pair->i]*pow(wCounts[current_pair->j], alpha)));
+        csr_a[a_index] = log2(current_pair->count * total_pairs / (wCounts[current_pair->i]*pow( (double)wCounts[current_pair->j], alpha)));
         // calculate ppmi
         csr_a[a_index] = std::max(0.0, csr_a[a_index]);
         csr_ja[a_index] = current_pair->j;
@@ -101,35 +106,9 @@ int buildMatrix(std::vector<IJPair> &pairs, Mat *A, int ndim, PetscScalar alpha)
         }
     }
     PetscErrorCode ierr;
-    //PetscInt n = ndim;
-    //PetscInt Istart, Iend;
-    //ierr = MatCreate(PETSC_COMM_WORLD,&A);CHKERRQ(ierr);
-    //ierr = MatSetSizes(A,PETSC_DECIDE,PETSC_DECIDE,n,n);CHKERRQ(ierr);
-    //ierr = MatSetFromOptions(A);CHKERRQ(ierr);
-    //ierr = MatSetUp(A);CHKERRQ(ierr);
-
-    //ierr = MatGetOwnershipRange(A,&Istart,&Iend);CHKERRQ(ierr);
-    //std::vector<IJPair>::iterator end = pairs.end();
-    //int * i =(int*) calloc(pairs.size(), sizeof(int));
-    //int *j = (int*) calloc(pairs.size(),sizeof(int));
-    //double *count = (double*) calloc(pairs.size(),sizeof(double));;
-    //int index = 0;
-    //for(std::vector<IJPair>::iterator current_pair=pairs.begin(); current_pair<end; current_pair++) {
-    //    i[index]=current_pair->i;;
-    //    j[index]=current_pair->j;
-    //    count[index] = (double)current_pair->count;
-    //    index++;
-    //if (current_pair->i >= Istart && current_pair->i < Iend){
-    //ierr = MatSetValue(A,current_pair->i,current_pair->j,current_pair->count,INSERT_VALUES);CHKERRQ(ierr);
-    //}
-    //}
     free(wCounts);
     ierr = MatCreateSeqAIJWithArrays(PETSC_COMM_SELF,ndim, ndim, csr_ia, csr_ja, csr_a, A);CHKERRQ(ierr);
 
-
-    //ierr = MatSetOption(*A, MAT_SYMMETRIC, PETSC_TRUE);CHKERRQ(ierr);
-    //ierr = MatAssemblyBegin(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
-    //ierr = MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
     return 0;
 }
 

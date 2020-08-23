@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
     PetscBool helpOption, isSymmetricOption, eigenWeight, flg;
     PetscScalar alpha;
     int MAXSTRINGLENGTH = 255;
-    char filename[MAXSTRINGLENGTH], outputUFilePath[MAXSTRINGLENGTH];
+    char filename[MAXSTRINGLENGTH]={'\0'}, outputUFilePath[MAXSTRINGLENGTH]={'\0'};
     PetscOptionsBegin(PETSC_COMM_SELF,"","PPMI SVD Options","none");
     PetscOptionsString("-inputFilePath","Parquet file with schema: i,j,count","",filename, filename, MAXSTRINGLENGTH,&flg);
     PetscOptionsString("-outputFilePath","This will write the U matrix to file","",outputUFilePath, outputUFilePath, MAXSTRINGLENGTH,&flg);
