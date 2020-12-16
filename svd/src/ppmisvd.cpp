@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <thread>
 #include <iterator>
 #include <arrow/api.h>
 #include <arrow/io/api.h>
@@ -9,8 +10,8 @@
 #include <parquet/exception.h>
 #include <boost/sort/sort.hpp>
 #include <algorithm>
-#include "ppmisvd.hpp"
 #include <math.h>
+#include "ppmisvd.hpp"
 
 
 using std::string;
@@ -73,10 +74,10 @@ int readParquetFile(string parquetFilePath, std::vector<IJPair> &pairs, PetscBoo
 int buildMatrix(std::vector<IJPair> &pairs, Mat *A, int ndim, PetscScalar alpha){
     boost::sort::block_indirect_sort(pairs.begin(), pairs.end());
     double * csr_a = (double *) calloc(pairs.size(), sizeof(double));
-    int * csr_ia = (int*) calloc(ndim+1, sizeof(int));
-    int * csr_ja = (int*) calloc(pairs.size(),sizeof(int));
-    int nnz =0 ;
-    int a_index = 0;
+    PetscInt * csr_ia = (PetscInt*) calloc(ndim+1, sizeof(PetscInt));
+    PetscInt * csr_ja = (PetscInt*) calloc(pairs.size(),sizeof(PetscInt));
+    PetscInt nnz =0 ;
+    size_t a_index = 0;
     std::vector<IJPair>::iterator end = pairs.end();
     // |D|, the total number of pairs in D when alpha = 1. otherwise sum(#(c)^alpha). 
     double total_pairs = 0; 
@@ -95,7 +96,7 @@ int buildMatrix(std::vector<IJPair> &pairs, Mat *A, int ndim, PetscScalar alpha)
         csr_a[a_index] = log2(current_pair->count * total_pairs / (wCounts[current_pair->i]*pow( (double)wCounts[current_pair->j], alpha)));
         // calculate ppmi
         csr_a[a_index] = std::max(0.0, csr_a[a_index]);
-        csr_ja[a_index] = current_pair->j;
+        csr_ja[a_index] = (PetscInt) current_pair->j;
         nnz++;
         csr_ia[current_pair->i+1] = nnz;
         a_index++;
