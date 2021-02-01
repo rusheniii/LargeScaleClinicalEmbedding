@@ -23,6 +23,9 @@ struct IJPair{
     }
 };
 
+struct MatrixInfo {
+    int start, end, ndim;
+};
 
-int readParquetFile(std::string parquetFilePath, std::vector<IJPair> &pairs, PetscBool isSymmetric);
-int buildMatrix(std::vector<IJPair> &pairs, Mat *A, int ndim, PetscScalar alpha);
+MatrixInfo readParquetFile(std::string parquetFilePath, std::vector<IJPair> &pairs, PetscBool isSymmetric, PetscMPIInt worldRank, PetscMPIInt worldSize, long long int * wCounts);
+int buildMatrix(std::vector<IJPair> &pairs, Mat *A, MatrixInfo mi, PetscScalar alpha, long long int * wCounts);

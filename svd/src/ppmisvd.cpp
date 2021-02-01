@@ -18,7 +18,7 @@ using std::string;
 
 
 
-int readParquetFile(string parquetFilePath, std::vector<IJPair> &pairs, PetscBool isSymmetric=PETSC_FALSE) {
+MatrixInfo readParquetFile(string parquetFilePath, std::vector<IJPair> &pairs, PetscBool isSymmetric, PetscMPIInt worldRank, PetscMPIInt worldSize, long long int * wCounts) {
     // read in parquet file
     std::shared_ptr<arrow::io::ReadableFile> infile;
     PARQUET_THROW_NOT_OK(arrow::io::ReadableFile::Open(parquetFilePath, arrow::default_memory_pool(), &infile));
@@ -45,6 +45,7 @@ int readParquetFile(string parquetFilePath, std::vector<IJPair> &pairs, PetscBoo
     auto j = std::static_pointer_cast<arrow::Int32Array>(table->column(1)->chunk(0));
     auto count = std::static_pointer_cast<arrow::Int64Array>(table->column(2)->chunk(0));
     int n = 0;
+    std::vector<IJPair> allPairs;
     for (int64_t c=0; c < table->num_rows(); c++) {
         int i_value = (int) i->Value(c);
         int j_value = (int) j->Value(c);
@@ -53,38 +54,52 @@ int readParquetFile(string parquetFilePath, std::vector<IJPair> &pairs, PetscBoo
             if (i_value!=j_value) {
                 IJPair pair1 = {i_value, j_value, count_value};
                 IJPair pair2 = {j_value, i_value, count_value};
-                pairs.emplace_back( pair1 );
-                pairs.emplace_back( pair2 );
+                allPairs.push_back( pair1 );
+                allPairs.push_back( pair2 );
             } else { 
                 IJPair pair = {i_value, j_value, count_value*2};
-                pairs.emplace_back( pair);
+                allPairs.push_back( pair);
             }
         } else {
             IJPair pair = {i_value, j_value, count_value};
-            pairs.emplace_back( pair );
+            allPairs.push_back( pair );
         }
         
         n = std::max(n,i_value);
         n = std::max(n, j_value);
     }
     // add one because we assume there is a row 0
-    return n+1;
+    n++;
+    int step = n / worldSize;
+    int remainder = n % step;
+    int start = step* worldRank, end = start+step;
+    if (worldRank == worldSize-1){
+        end+=remainder;
+    } 
+    wCounts = (long long *) calloc(n, sizeof(long long));
+    for (std::vector<IJPair>::iterator current_pair = allPairs.begin(); current_pair < allPairs.end(); current_pair++) {
+        wCounts[current_pair->i] += current_pair -> count;
+        if (current_pair->i >= start && current_pair->i <= end) {
+            pairs.push_back(*current_pair);
+        }
+    }
+    MatrixInfo mi = {start, end, n};
+    return mi;
 }
 
-int buildMatrix(std::vector<IJPair> &pairs, Mat *A, int ndim, PetscScalar alpha){
+int buildMatrix(std::vector<IJPair> &pairs, Mat *A, MatrixInfo mi, PetscScalar alpha, long long int * wCounts){
+    int ndim = mi.ndim;
+    int start = mi.start;
+    int stop = mi.end;
     boost::sort::block_indirect_sort(pairs.begin(), pairs.end());
     double * csr_a = (double *) calloc(pairs.size(), sizeof(double));
-    PetscInt * csr_ia = (PetscInt*) calloc(ndim+1, sizeof(PetscInt));
+    PetscInt * csr_ia = (PetscInt*) calloc(stop-start+1, sizeof(PetscInt));
     PetscInt * csr_ja = (PetscInt*) calloc(pairs.size(),sizeof(PetscInt));
     PetscInt nnz =0 ;
     size_t a_index = 0;
     std::vector<IJPair>::iterator end = pairs.end();
     // |D|, the total number of pairs in D when alpha = 1. otherwise sum(#(c)^alpha). 
     double total_pairs = 0; 
-    long long * wCounts = (long long *) calloc(ndim+1,sizeof(long long)); // SUM(w, c')
-    for(std::vector<IJPair>::iterator current_pair=pairs.begin(); current_pair<end; current_pair++) {
-        wCounts[current_pair->i]+=current_pair->count;
-    }
     // Context distribution smoothing
     // calculate sum(#(c)^alpha) for every c in V_c
     for(size_t i = 0; i < ndim+1; i++){
@@ -98,18 +113,17 @@ int buildMatrix(std::vector<IJPair> &pairs, Mat *A, int ndim, PetscScalar alpha)
         csr_a[a_index] = std::max(0.0, csr_a[a_index]);
         csr_ja[a_index] = (PetscInt) current_pair->j;
         nnz++;
-        csr_ia[current_pair->i+1] = nnz;
+        csr_ia[(current_pair->i) - start + 1] = nnz;
         a_index++;
     }
-    for (int a=1; a<ndim+1; a++){
+    for (int a=1; a<stop-start+1; a++){
         if (csr_ia[a]==0) {
             csr_ia[a]= csr_ia[a-1];
         }
     }
     PetscErrorCode ierr;
     free(wCounts);
-    ierr = MatCreateSeqAIJWithArrays(PETSC_COMM_SELF,ndim, ndim, csr_ia, csr_ja, csr_a, A);CHKERRQ(ierr);
-
+    ierr = MatCreateMPIAIJWithArrays(PETSC_COMM_WORLD, stop-start, stop-start, ndim, ndim, csr_ia, csr_ja, csr_a, A);CHKERRQ(ierr);
     return 0;
 }
 
