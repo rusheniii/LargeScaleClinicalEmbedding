@@ -12,14 +12,14 @@ using std::string;
 
 int main(int argc, char** argv) {
     if (argc < 4) {
-        std::cout << "./orderedPairsBefore <outputFileName> <numberOfThreads> [input files] ..." << std::endl;
+        std::cout << "./orderedPairsSameDay <outputFileName> <numberOfThreads> [input files] ..." << std::endl;
         exit(0);
     }
     int thread_num=boost::lexical_cast<int>(argv[2]);
     //int bufferSize = 2000000011;
     int bufferSize = 200011;
-    int window = 30;
-    std::string outputFilePath(argv[1]); 
+    int window = 0;
+    std::string outputFilePath(argv[1]);
     using std::cout;
     std::vector<std::thread> threads;
     Table freq_map(bufferSize);
@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
         readParquetFile(inputFilePath, std::ref(events));
         boost::timer::cpu_timer timer;
         for (int i =0; i<thread_num; i++) {
-            threads.emplace_back(generatePairsBefore, std::ref(freq_map), std::ref(events), i, thread_num, window, std::ref(rowCounter));
+            threads.emplace_back(generatePairsSameDay, std::ref(freq_map), std::ref(events), i, thread_num, window, std::ref(rowCounter));
         }
         while(rowCounter < events.size()-2) {
             usleep(5 * 10e5);
@@ -48,9 +48,9 @@ int main(int argc, char** argv) {
         events.clear();
         threads.clear();
         cout << "Finished File:" << argv[n] << std::endl;
-        //dumpTable(freq_map, outputFilePath, tempFilePath); 
+        //dumpTable(freq_map, outputFilePath, tempFilePath);
     }
-    dumpTable(freq_map, outputFilePath); 
+    dumpTable(freq_map, outputFilePath);
     return 0;
 }
 

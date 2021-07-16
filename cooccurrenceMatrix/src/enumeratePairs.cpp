@@ -9,7 +9,6 @@
 #include <parquet/arrow/reader.h>
 #include <parquet/arrow/writer.h>
 #include <parquet/exception.h>
-
 #include "enumeratePairs.hpp"
 
 
@@ -24,6 +23,7 @@ void readParquetFile(string parquetFilePath, std::vector<MedicalEvent> &events) 
     std::unique_ptr<parquet::arrow::FileReader> reader;
     PARQUET_THROW_NOT_OK(parquet::arrow::OpenFile(infile, arrow::default_memory_pool(), &reader));
     std::shared_ptr<arrow::Table> table;
+    reader->set_use_threads(true);
     PARQUET_THROW_NOT_OK(reader->ReadTable(&table));
     // expected schema
     std::vector<std::shared_ptr<arrow::Field>> schema_vector = {
@@ -52,7 +52,31 @@ void readParquetFile(string parquetFilePath, std::vector<MedicalEvent> &events) 
     return;
 }
 
-void generatePairs( Table &pairs, std::vector<MedicalEvent> &events, int threadId, int totalThreads, int window, std::atomic<int> &rowCounter) {
+void generatePairsBefore( Table &pairs, std::vector<MedicalEvent> &events, int threadId, int totalThreads, int window, std::atomic<int> &rowCounter) {
+    std::vector<MedicalEvent>::iterator end = events.end()--;
+    for (std::vector<MedicalEvent>::iterator i=events.begin()+threadId; i<end; i+=totalThreads) {
+        int psid = i->psid;
+        int numDays = i->numDays;
+        int word = i->word;
+        Table::accessor a;
+        for (std::vector<MedicalEvent>::iterator j = i+1; j< events.end(); j++) {
+            if (psid != j->psid) { break;}
+            if (j->numDays - numDays > window) { break;}
+            if (j->numDays == numDays) {continue;}
+            KeyType num;
+            num = KeyType(word, j->word);
+            bool missing = pairs.insert(a, num);
+            if (missing) {
+                a->second=0;
+            }
+            a->second+=1;
+            a.release();
+        }
+        rowCounter++;
+    }
+}
+
+void generatePairsSameDay( Table &pairs, std::vector<MedicalEvent> &events, int threadId, int totalThreads, int window, std::atomic<int> &rowCounter) {
     std::vector<MedicalEvent>::iterator end = events.end()--;
     for (std::vector<MedicalEvent>::iterator i=events.begin()+threadId; i<end; i+=totalThreads) {
         int psid = i->psid;
@@ -64,7 +88,7 @@ void generatePairs( Table &pairs, std::vector<MedicalEvent> &events, int threadI
             if (j->numDays - numDays > window) { break;}
             KeyType num;
             if (word < j->word) {
-            num = KeyType(word, j->word);
+                num = KeyType(word, j->word);
             } else { num = KeyType(j->word, word); }
             bool missing = pairs.insert(a, num);
             if (missing) {
@@ -77,23 +101,53 @@ void generatePairs( Table &pairs, std::vector<MedicalEvent> &events, int threadI
     }
 }
 
-void dumpTable( Table &pairs, string outPath){
-    arrow::Int32Builder i,j;
+void writeRowGroup(std::vector<int32_t> &iVector, std::vector<int32_t> &jVector, std::vector<int64_t> &countVector, std::unique_ptr<parquet::arrow::FileWriter> &fileWriter) {
+    arrow::Int32Builder i, j;
     arrow::Int64Builder count;
-    for (auto it = pairs.begin(); it!=pairs.end(); it++) {
-        KeyType key = it->first;
-        long long int value = it->second;
-        i.Append(key.first);j.Append(key.second);count.Append(value);
-    }
-    std::shared_ptr<arrow::Array> iArray,jArray, countArray;
+    std::shared_ptr<arrow::Array> iArray, jArray, countArray;
+    i.AppendValues(iVector);
     i.Finish(&iArray);
+    j.AppendValues(jVector);
     j.Finish(&jArray);
+    count.AppendValues(countVector);
     count.Finish(&countArray);
-    std::shared_ptr<arrow::Schema> schema = arrow::schema( {arrow::field("i",arrow::int32()), 
-    arrow::field("j",arrow::int32()), 
-    arrow::field("count",arrow::int64())} );
-    std::shared_ptr<arrow::Table> arrowTable = arrow::Table::Make(schema, {iArray, jArray, countArray});
+    fileWriter->NewRowGroup(iVector.size());
+    fileWriter->WriteColumnChunk(*iArray);
+    fileWriter->WriteColumnChunk(*jArray);
+    fileWriter->WriteColumnChunk(*countArray);
+}
+
+void dumpTable( Table &pairs, string outPath){
     std::shared_ptr<arrow::io::FileOutputStream> outFile;
     arrow::io::FileOutputStream::Open(outPath, &outFile);
-    parquet::arrow::WriteTable(*arrowTable, arrow::default_memory_pool(), outFile, 10000);
+
+    std::shared_ptr<arrow::Schema> schema = arrow::schema( {arrow::field("i", arrow::int32()),
+        arrow::field("j", arrow::int32()),
+        arrow::field("count", arrow::int64())
+    });
+    parquet::WriterProperties::Builder builder;
+    builder.compression(parquet::Compression::SNAPPY);
+    std::shared_ptr<parquet::WriterProperties> props = builder.build();
+
+    std::unique_ptr<parquet::arrow::FileWriter> fileWriter;
+    parquet::arrow::FileWriter::Open(*schema, arrow::default_memory_pool(), outFile, props, &fileWriter);
+    std::vector<int32_t> i, j;
+    std::vector<int64_t> count;
+    for (auto it=pairs.begin(); it!=pairs.end(); it++){
+        KeyType key = it->first;
+        long long int value = it->second;
+        i.push_back( (int32_t) key.first );
+        j.push_back( (int32_t) key.second);
+        count.push_back( (int64_t) value);
+        if (i.size()>=30000){
+            writeRowGroup(i,j,count,fileWriter);
+            i.clear();
+            j.clear();
+            count.clear();
+        }
+    }
+    if (i.size() > 0) {
+        writeRowGroup(i, j, count, fileWriter);
+    }
+    fileWriter->Close();
 }

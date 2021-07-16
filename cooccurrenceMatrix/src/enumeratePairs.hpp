@@ -40,5 +40,6 @@ public:
 
 void readParquetFile(string parquetFilePath, std::vector<MedicalEvent> &events);
 void readGzipFile(string filePath, std::vector<MedicalEvent> &events);
-void generatePairs( Table &pairs, std::vector<MedicalEvent> &events, int threadId, int totalThreads, int window, std::atomic<int> &rowCounter);
+void generatePairsBefore( Table &pairs, std::vector<MedicalEvent> &events, int threadId, int totalThreads, int window, std::atomic<int> &rowCounter);
+void generatePairsSameDay( Table &pairs, std::vector<MedicalEvent> &events, int threadId, int totalThreads, int window, std::atomic<int> &rowCounter);
 void dumpTable( Table &pairs, string outPath);
