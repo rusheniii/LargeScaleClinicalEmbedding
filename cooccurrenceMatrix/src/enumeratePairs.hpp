@@ -33,7 +33,18 @@ public:
         this->psid = boost::lexical_cast<int>(psid);
         this->numDays = boost::lexical_cast<int>(numDays);
         this->word = boost::lexical_cast<int>(word);
-
+    }
+    bool operator<(MedicalEvent &b) {
+        if (psid==b.psid){
+            return numDays<b.numDays;
+        }
+        return psid<b.psid;
+    }
+    bool operator<(const MedicalEvent &b) const {
+        if (psid==b.psid){
+            return numDays<b.numDays;
+        }
+        return psid<b.psid;
     }
 };
 
