@@ -18,7 +18,10 @@ using std::string;
 void readParquetFile(string parquetFilePath, std::vector<MedicalEvent> &events) {
     // read in parquet file
     std::shared_ptr<arrow::io::ReadableFile> infile;
-    PARQUET_THROW_NOT_OK(arrow::io::ReadableFile::Open(parquetFilePath, arrow::default_memory_pool(), &infile));
+    auto result = arrow::io::ReadableFile::Open(parquetFilePath, arrow::default_memory_pool());
+    if (result.ok()){
+        infile = result.ValueOrDie();
+    }
     std::unique_ptr<parquet::arrow::FileReader> reader;
     PARQUET_THROW_NOT_OK(parquet::arrow::OpenFile(infile, arrow::default_memory_pool(), &reader));
     int num_row_groups = reader->num_row_groups();
@@ -103,7 +106,7 @@ void writeRowGroup(std::vector<int32_t> & iVector, std::vector<int32_t> & jVecto
 
 void dumpTable( Table &pairs, string outPath){
     std::shared_ptr<arrow::io::FileOutputStream> outFile;
-    arrow::io::FileOutputStream::Open(outPath, &outFile);
+    PARQUET_ASSIGN_OR_THROW(outFile, arrow::io::FileOutputStream::Open(outPath));
     std::shared_ptr<arrow::Schema> schema = arrow::schema( {arrow::field("i",arrow::int32()),
     arrow::field("j",arrow::int32()),
     arrow::field("count",arrow::int64())} );

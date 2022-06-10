@@ -14,17 +14,17 @@ int main(int argc, char** argv) {
         return ierr;
     }
 
-    ierr = PetscPrintf(PETSC_COMM_SELF,"Compute PPMI Matrix\n");CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"Compute PPMI Matrix\n");CHKERRQ(ierr);
     Mat A;
     SVD            svd;             /* singular value problem solver context */
     SVDType        type;
     PetscReal      error,tol,sigma,mu=PETSC_SQRT_MACHINE_EPSILON;
-    PetscInt       nsv,maxit,its,nconv;
+    PetscInt       nrows,nsv,maxit,its,nconv;
     PetscBool helpOption, isSymmetricOption, eigenWeight, flg;
     PetscScalar alpha;
     int MAXSTRINGLENGTH = 255;
     char filename[MAXSTRINGLENGTH]={'\0'}, outputUFilePath[MAXSTRINGLENGTH]={'\0'};
-    PetscOptionsBegin(PETSC_COMM_SELF,"","PPMI SVD Options","none");
+    PetscOptionsBegin(PETSC_COMM_WORLD,"","PPMI SVD Options","none");
     PetscOptionsString("-inputFilePath","Parquet file with schema: i,j,count","",filename, filename, MAXSTRINGLENGTH,&flg);
     PetscOptionsString("-outputFilePath","This will write the U matrix to file","",outputUFilePath, outputUFilePath, MAXSTRINGLENGTH,&flg);
     helpOption = PETSC_FALSE;
@@ -35,19 +35,30 @@ int main(int argc, char** argv) {
     PetscOptionsBool("-eigenWeight", "multiply left singular vectors by sqrt(sigma)?", "", eigenWeight, &eigenWeight, NULL);
     alpha = 0.75;
     PetscOptionsScalar("-alpha","The exponent for smoothing PPMI", "", alpha, &alpha, NULL);
+    nrows = 0;
+    PetscOptionsInt("-nrows","size of input matrix","",nrows,&nrows,NULL);
     PetscOptionsEnd();
     if (helpOption) {
-        ierr = MatCreate(PETSC_COMM_SELF,&A);CHKERRQ(ierr);
+        ierr = MatCreate(PETSC_COMM_WORLD,&A);CHKERRQ(ierr);
         ierr = MatSetFromOptions(A);CHKERRQ(ierr);
-        ierr = SVDCreate(PETSC_COMM_SELF,&svd);CHKERRQ(ierr);
+        ierr = SVDCreate(PETSC_COMM_WORLD,&svd);CHKERRQ(ierr);
         ierr = SVDSetFromOptions(svd);CHKERRQ(ierr);
+        ierr = SlepcFinalize();
         return 0;
     }
     std::string inputFilePath(filename);
     //for (int n = 1; n < argc; n++) {
-    cout << "Reading File:" << inputFilePath<< " "<<helpOption << std::endl;
-    int ndim = readParquetFile(inputFilePath, pairs, isSymmetricOption);
-    buildMatrix(pairs, &A, ndim,alpha);
+    //cout << "Reading File:" << inputFilePath<< " "<<helpOption << std::endl;
+    PetscMPIInt worldSize, worldRank;
+    ierr = MPI_Comm_size(PETSC_COMM_WORLD,&worldSize); CHKERRQ(ierr);
+    ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&worldRank); CHKERRQ(ierr);
+    long long int * wCounts=NULL;
+    MatrixInfo mi = readParquetFile(inputFilePath, pairs, isSymmetricOption, worldRank, worldSize, wCounts, nrows);
+    int ndim = mi.ndim;
+    if (ndim == -1) {
+        return 1;
+    }
+    buildMatrix(pairs, &A, mi,alpha, wCounts);
     pairs.clear();
 
     /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -56,7 +67,7 @@ int main(int argc, char** argv) {
     /*
     Create singular value solver context
     */
-    ierr = SVDCreate(PETSC_COMM_SELF,&svd);CHKERRQ(ierr);
+    ierr = SVDCreate(PETSC_COMM_WORLD,&svd);CHKERRQ(ierr);
     /*
     Set operator
     */
@@ -74,74 +85,52 @@ int main(int argc, char** argv) {
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
     ierr = SVDSolve(svd);CHKERRQ(ierr);
     ierr = SVDGetIterationNumber(svd,&its);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_SELF," Number of iterations of the method: %D\n",its);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD," Number of iterations of the method: %D\n",its);CHKERRQ(ierr);
 
 
     /*
     Get some information from the solver and display it
     */
     ierr = SVDGetType(svd,&type);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_SELF," Solution method: %s\n\n",type);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD," Solution method: %s\n\n",type);CHKERRQ(ierr);
     ierr = SVDGetDimensions(svd,&nsv,NULL,NULL);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_SELF," Number of requested singular values: %D\n",nsv);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD," Number of singular values: %D\n",nsv);CHKERRQ(ierr);
     ierr = SVDGetTolerances(svd,&tol,&maxit);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_SELF," Stopping condition: tol=%.4g, maxit=%D\n",(double)tol,maxit);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD," Stopping condition: tol=%.4g, maxit=%D\n",(double)tol,maxit);CHKERRQ(ierr);
     ierr = SVDGetConverged(svd,&nconv);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_SELF," Number of converged approximate singular triplets: %D\n\n",nconv);CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD," Number of converged approximate singular triplets: %D\n\n",nconv);CHKERRQ(ierr);
     /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     Display solution and clean up
     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
     if (nconv> 0){
-        std::vector<Vec> U_columns;
-        Vec u,v;
-        ierr = MatCreateVecs(A,&v,&u);CHKERRQ(ierr);
-        ierr = PetscPrintf(PETSC_COMM_SELF,"Creating U Matrix\n");CHKERRQ(ierr);
-        Mat U;
-        PetscScalar * UData=0, * uiData = 0;
-        //MatCreate(PETSC_COMM_WORLD, &U);
-        //MatCreate(PETSC_COMM_SELF, &U);
-        MatCreateDense(PETSC_COMM_SELF, ndim, nconv, ndim, nconv, NULL, &U);
-        MatDenseGetArray(U,&UData);
-        //MatSetSizes(U,ndim,nconv, ndim, nconv);
-        //MatSetType(U,MATDENSE);
-        //PetscMalloc1(ndim*nconv,&UData);
-        //MatSeqDenseSetPreallocation(U,UData);
-        //MatAssemblyBegin(U,MAT_FINAL_ASSEMBLY);
-        //MatAssemblyEnd(U,MAT_FINAL_ASSEMBLY);
-
-        ierr = PetscPrintf(PETSC_COMM_SELF,"Initializing U Matrix\n");CHKERRQ(ierr);
         for (int i=0;i<nconv;i++) {
+            PetscViewer viewer;
+            Vec u, v;
             /*
             Get converged singular triplets: i-th singular value is stored in sigma
             */
-            ierr = SVDGetSingularTriplet(svd,i,&sigma,u,v);CHKERRQ(ierr);
+            ierr = MatCreateVecs(A, &v, &u); CHKERRQ(ierr);
+            ierr = SVDGetSingularTriplet(svd,i,&sigma, u, v);CHKERRQ(ierr);
             PetscScalar sqrt_sigma = (PetscScalar) std::sqrt(sigma);
             if (eigenWeight){
-                VecScale(u,sqrt_sigma);
+                VecScale(u, sqrt_sigma);
             }
-            //TODO: multiply each vector by square root sigma
-            //VecCreateMPIWithArray(PETSC_COMM_WORLD, bs, ndim, PETSC_DECIDE, cols[i]);
-            // assume that dense matrix is stored by column.
-            //VecCreateSeqWithArray(PETSC_COMM_SELF, 1, ndim, &UData[i*ndim], &u);
-            //VecCreateSeqWithArray(PETSC_COMM_SELF, 1, ndim, UData, &u);
-            VecGetArray(u,&uiData);
-            PetscMemcpy(&UData[i*ndim],uiData,ndim*(sizeof(PetscScalar)));
-            /*
-            Compute the error associated to each singular triplet
-            */
-            //ierr = SVDComputeError(svd,i,SVD_ERROR_RELATIVE,&error);CHKERRQ(ierr);
+            if (i==0) {
+                PetscViewerBinaryOpen(PETSC_COMM_WORLD, outputUFilePath, FILE_MODE_WRITE, &viewer);
+                VecView(u, viewer);
+                PetscViewerDestroy(&viewer);
+            } else {
+                PetscViewerBinaryOpen(PETSC_COMM_WORLD, outputUFilePath, FILE_MODE_APPEND, &viewer);
+                VecView(u, viewer);
+                PetscViewerDestroy(&viewer);
+            }
+            MPI_Barrier(PETSC_COMM_WORLD);
+            ierr = VecDestroy(&u); CHKERRQ(ierr);
+            ierr = VecDestroy(&v); CHKERRQ(ierr);
         }
-        ierr = PetscPrintf(PETSC_COMM_SELF,"Writing U Matrix\n");CHKERRQ(ierr);
-        PetscViewer viewer;
-        PetscViewerBinaryOpen(PETSC_COMM_SELF, outputUFilePath, FILE_MODE_WRITE, &viewer);
-        MatView(U,viewer);
-        PetscViewerDestroy(&viewer);
-        ierr = VecDestroy(&u);CHKERRQ(ierr);
-        ierr = VecDestroy(&v);CHKERRQ(ierr);
-        ierr = MatDestroy(&U);CHKERRQ(ierr);
-
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"Wrote U Matrix\n");CHKERRQ(ierr);
+        MPI_Barrier(PETSC_COMM_WORLD);
     }
-
     /*
     Free work space
     */

@@ -15,7 +15,7 @@ For cases where the input data is very large and needs to be scaled beyond a sin
 2. Linux
 
 ## Installation Instructions
-`conda install -c conda-forge gxx_linux-64 arrow-cpp=0.15 cmake gfortran_linux-64 slepc=3.12 tbb-devel=2020.0` <br/><br/>
+`conda install -c conda-forge gxx_linux-64 arrow-cpp=3.0.0 cmake gfortran_linux-64 slepc=3.15 tbb-devel=2020.3` <br/><br/>
 `mkdir build` <br/><br/>
 `cd build` <br/><br/>
 `cmake ..` <br/><br/>
@@ -23,7 +23,7 @@ For cases where the input data is very large and needs to be scaled beyond a sin
 These steps should compile both applications. The binaries are in a directory named `bin`.
 
 ### Installation without MPI
-`conda install -c conda-forge gxx_linux-64 arrow-cpp=0.15 cmake gfortran_linux-64 openblas tbb-devel=2020.0` <br/><br/>
+`conda install -c conda-forge gxx_linux-64 arrow-cpp=3.0.0 cmake gfortran_linux-64 openblas tbb-devel=2020.3` <br/><br/>
 `bash no_mpi_build.sh` <br/><br/>
 `cd build` <br/><br/>
 `cmake ..` <br/><br/>
